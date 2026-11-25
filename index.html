@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тест: Энергетика химических реакций и закон Гесса</title>
+  <!-- Подключение шрифта Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Подключение Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#f1f5f9] text-[#0f172a] font-sans antialiased min-h-screen flex flex-col selection:bg-blue-200 selection:text-blue-900">
+
+  <!-- Компактная однострочная шапка (высота <= 64px) -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-xs">
+    <div class="max-w-[1120px] mx-auto px-3 sm:px-5 h-14 sm:h-[60px] flex items-center justify-between gap-3">
+      <!-- Левая часть: логотип и название темы -->
+      <div class="flex items-center gap-2.5 min-w-0 shrink-0">
+        <div class="w-8 h-8 rounded-lg bg-[#2563eb] text-white flex items-center justify-center font-extrabold text-sm shadow-xs shrink-0">
+          ΔH
+        </div>
+        <div class="leading-tight truncate">
+          <h1 class="text-xs sm:text-sm font-bold text-[#0f172a] truncate">
+            Энергетика химических реакций
+          </h1>
+          <p class="text-[11px] text-slate-500 font-medium hidden sm:block truncate">
+            Тепловой эффект и закон Гесса · 12 класс
+          </p>
+        </div>
+      </div>
+
+      <!-- Центральная часть: прогресс-бар и номер вопроса -->
+      <div id="progressSection" class="flex-1 max-w-md mx-2 hidden md:flex flex-col justify-center">
+        <div class="flex items-center justify-between text-xs font-semibold text-slate-600 mb-1">
+          <span id="progressText">Вопрос 1 из 20</span>
+          <span id="progressPercent" class="text-[#2563eb]">5%</span>
+        </div>
+        <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+          <div id="progressBar" class="h-full bg-[#2563eb] rounded-full transition-all duration-300 ease-out" style="width: 5%"></div>
+        </div>
+      </div>
+
+      <!-- Правая часть: счетчик баллов и сброс -->
+      <div class="flex items-center gap-2 shrink-0">
+        <span id="mobileProgressText" class="md:hidden text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-lg">
+          1/20
+        </span>
+        <div class="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg text-xs sm:text-sm font-semibold text-slate-700">
+          <span class="text-slate-500 hidden sm:inline">Баллы:</span>
+          <span id="scoreDisplay" class="text-[#2563eb] font-bold">0</span>
+          <span class="text-slate-400">/ 20</span>
+        </div>
+        <button
+          id="headerResetBtn"
+          type="button"
+          title="Начать тест заново"
+          class="p-1.5 sm:p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
+    </div>
+    <!-- Тонкий прогресс-бар для мобильных экранов -->
+    <div id="mobileProgressBarWrap" class="md:hidden w-full h-1 bg-slate-200">
+      <div id="mobileProgressBar" class="h-full bg-[#2563eb] transition-all duration-300 ease-out" style="width: 5%"></div>
+    </div>
+  </header>
+
+  <!-- Основной широкоэкранный контейнер (max-width: 1120px) -->
+  <main class="flex-1 w-full max-w-[1120px] mx-auto px-3 sm:px-5 py-3 sm:py-4 flex flex-col justify-start">
+
+    <!-- Экран активного вопроса -->
+    <section id="quizScreen" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 lg:p-6 transition-all">
+      <!-- Мета-строка вопроса -->
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+        <span id="questionTypeBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase">
+          Один ответ
+        </span>
+        <span id="questionHint" class="text-xs sm:text-sm font-medium text-slate-500">
+          Выберите один верный вариант
+        </span>
+      </div>
+
+      <!-- Текст вопроса (18-20px) -->
+      <h2 id="questionText" class="text-lg sm:text-[19px] lg:text-[20px] font-bold text-[#0f172a] leading-snug mb-4"></h2>
+
+      <!-- Контейнер вариантов ответа (динамическая сетка) -->
+      <div id="optionsContainer"></div>
+
+      <!-- Предупреждение валидации (без alert) -->
+      <div id="validationMsg" class="hidden mt-3 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-sm font-medium flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span id="validationText">Пожалуйста, выберите ответ перед проверкой.</span>
+      </div>
+
+      <!-- Компактный блок обратной связи и пояснения -->
+      <div id="feedbackBox" class="hidden mt-3.5 rounded-xl border-2 px-4 py-3 transition-all">
+        <div class="flex items-center gap-2 mb-1">
+          <span id="feedbackIcon" class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"></span>
+          <h3 id="feedbackTitle" class="font-bold text-sm sm:text-base"></h3>
+          <span id="feedbackPoints" class="ml-auto text-xs font-bold px-2 py-0.5 rounded-md"></span>
+        </div>
+        <p id="feedbackExplanation" class="text-sm leading-snug text-slate-700"></p>
+      </div>
+
+      <!-- Панель действий (всегда видна без прокрутки) -->
+      <div class="mt-4 pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5">
+        <button
+          id="checkBtn"
+          type="button"
+          class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#2563eb] hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-[15px] shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-2"
+        >
+          Проверить ответ
+        </button>
+        <button
+          id="nextBtn"
+          type="button"
+          class="hidden w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#0f172a] hover:bg-slate-800 active:bg-slate-950 text-white font-semibold text-[15px] shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-slate-700 focus:ring-offset-2 inline-flex items-center justify-center gap-2"
+        >
+          <span id="nextBtnText">Следующий вопрос</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- Финальный экран результатов -->
+    <section id="resultScreen" class="hidden space-y-5">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-7 text-center">
+        <div id="resultBadge" class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold mb-3"></div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-[#0f172a] mb-1.5">Тест завершен!</h2>
+        <p id="resultSummaryText" class="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto mb-5"></p>
+
+        <!-- Итоговые метрики -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto mb-6">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-0.5">Итоговый балл</div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-[#2563eb]">
+              <span id="finalScore">0</span> <span class="text-base text-slate-400 font-semibold">/ 20</span>
+            </div>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-0.5">Выполнение</div>
+            <div id="finalPercent" class="text-2xl sm:text-3xl font-extrabold text-[#16a34a]">0%</div>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-0.5">Уровень освоения</div>
+            <div id="finalLevel" class="text-lg sm:text-xl font-extrabold text-[#0f172a] mt-1">—</div>
+          </div>
+        </div>
+
+        <button
+          id="restartBtn"
+          type="button"
+          class="w-full sm:w-auto px-7 py-3 rounded-xl bg-[#2563eb] hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-base shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:ring-offset-2 inline-flex items-center justify-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Пройти заново
+        </button>
+      </div>
+
+      <!-- Сводка по всем 20 вопросам -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+          <h3 class="font-bold text-[#0f172a] text-base">Сводка ответов и разбор ошибок</h3>
+          <span class="text-xs font-medium text-slate-500">Нажмите на вопрос, чтобы раскрыть правильный ответ и пояснение</span>
+        </div>
+        <div id="reviewList" class="divide-y divide-slate-200"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Модальное окно подтверждения сброса (вместо confirm) -->
+  <div id="resetModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full p-5">
+      <h3 class="text-lg font-bold text-[#0f172a] mb-1.5">Начать тест заново?</h3>
+      <p class="text-sm text-slate-600 mb-4">
+        Текущий прогресс и набранные баллы будут сброшены, а порядок вариантов перемешается заново.
+      </p>
+      <div class="flex items-center justify-end gap-2">
+        <button
+          id="cancelResetBtn"
+          type="button"
+          class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition-colors"
+        >
+          Отмена
+        </button>
+        <button
+          id="confirmResetBtn"
+          type="button"
+          class="px-4 py-2 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white font-semibold text-sm transition-colors"
+        >
+          Начать заново
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * Банк из 20 вопросов по теме «Энергетика химических реакций: тепловой эффект и закон Гесса» (12 класс).
+     * В HTML-тексте используются <sub> и <sup>.
+     * В значениях right для <option> — только символы Юникода (CH₄, CaCO₃, CO₂, H₂O, NH₄⁺, NO₃⁻, ΔH, Eₐ).
+     */
+    const QUESTIONS_BANK = [
+      // ==================== БЛОК 1: ВЫБОР ОДНОГО ОТВЕТА (1–10) ====================
+      {
+        id: 1,
+        type: 'single',
+        question: 'Что происходит с энергией при образовании новых химических связей в продуктах реакции?',
+        options: [
+          { id: 'a', text: 'Энергия всегда выделяется (E &lt; 0)', isCorrect: true },
+          { id: 'b', text: 'Энергия всегда поглощается (E &gt; 0)', isCorrect: false },
+          { id: 'c', text: 'Изменение энергии равно нулю', isCorrect: false },
+          { id: 'd', text: 'Знак энергии зависит от катализатора', isCorrect: false }
+        ],
+        explanation: 'Разрыв связей всегда требует затрат энергии (E &gt; 0), а образование новых связей всегда сопровождается выделением энергии (E &lt; 0).'
+      },
+      {
+        id: 2,
+        type: 'single',
+        question: 'Какая формула правильно связывает изменение энтальпии химической системы (ΔH) и тепловой эффект окружающей среды (Q)?',
+        options: [
+          { id: 'a', text: 'ΔH = −Q', isCorrect: true },
+          { id: 'b', text: 'ΔH = Q', isCorrect: false },
+          { id: 'c', text: 'ΔH = 1 / Q', isCorrect: false },
+          { id: 'd', text: 'ΔH + Q = 1', isCorrect: false }
+        ],
+        explanation: 'Если система отдает тепло (ΔH &lt; 0), окружающая среда его получает (+Q). Поэтому ΔH и Q всегда противоположны по знаку: ΔH = −Q.'
+      },
+      {
+        id: 3,
+        type: 'single',
+        question: 'Какое утверждение верно для любой экзотермической реакции?',
+        options: [
+          { id: 'a', text: 'ΔH &lt; 0, энергия реагентов больше энергии продуктов: H(реаг.) &gt; H(прод.)', isCorrect: true },
+          { id: 'b', text: 'ΔH &gt; 0, энергия реагентов меньше энергии продуктов', isCorrect: false },
+          { id: 'c', text: 'Окружающая среда в ходе реакции охлаждается (−Q)', isCorrect: false },
+          { id: 'd', text: 'Реакция всегда требует постоянного нагревания', isCorrect: false }
+        ],
+        explanation: 'В экзотермических реакциях система теряет энергию, отдавая тепло в среду (+Q, ΔH &lt; 0), поэтому H(реагентов) &gt; H(продуктов).'
+      },
+      {
+        id: 4,
+        type: 'single',
+        question: 'Чему равна стандартная энтальпия образования простых веществ в их устойчивом состоянии (O<sub>2</sub>, N<sub>2</sub>, Fe, C<sub>(графит)</sub>)?',
+        options: [
+          { id: 'a', text: 'Всегда равна нулю', isCorrect: true },
+          { id: 'b', text: 'Всегда положительна', isCorrect: false },
+          { id: 'c', text: 'Равна энергии активации', isCorrect: false },
+          { id: 'd', text: 'Зависит от массы вещества', isCorrect: false }
+        ],
+        explanation: 'По определению стандартная энтальпия образования простых веществ в их наиболее устойчивой модификации равна 0 кДж/моль.'
+      },
+      {
+        id: 5,
+        type: 'single',
+        question: 'Как изменится значение ΔH, если все стехиометрические коэффициенты в термохимическом уравнении умножить на 3?',
+        options: [
+          { id: 'a', text: 'Увеличится в 3 раза', isCorrect: true },
+          { id: 'b', text: 'Уменьшится в 3 раза', isCorrect: false },
+          { id: 'c', text: 'Останется без изменений', isCorrect: false },
+          { id: 'd', text: 'Изменит знак на противоположный', isCorrect: false }
+        ],
+        explanation: 'Энтальпия реакции прямо пропорциональна количеству прореагировавших веществ: умножили коэффициенты на 3 — умножаем ΔH на 3.'
+      },
+      {
+        id: 6,
+        type: 'single',
+        question: 'Что произойдет со значением ΔH, если записать термохимическое уравнение в обратном направлении (перевернуть)?',
+        options: [
+          { id: 'a', text: 'Знак ΔH изменится на противоположный', isCorrect: true },
+          { id: 'b', text: 'Значение ΔH уменьшится вдвое', isCorrect: false },
+          { id: 'c', text: 'Значение ΔH станет равно нулю', isCorrect: false },
+          { id: 'd', text: 'Значение и знак ΔH не изменятся', isCorrect: false }
+        ],
+        explanation: 'При обращении реакции прямая и обратная реакции имеют равные по модулю, но противоположные по знаку тепловые эффекты.'
+      },
+      {
+        id: 7,
+        type: 'single',
+        question: 'Согласно закону Гесса (1840 г.), от чего зависит тепловой эффект химической реакции?',
+        options: [
+          { id: 'a', text: 'Только от начального и конечного состояния веществ', isCorrect: true },
+          { id: 'b', text: 'От числа промежуточных стадий и пути реакции', isCorrect: false },
+          { id: 'c', text: 'От присутствия катализатора', isCorrect: false },
+          { id: 'd', text: 'От скорости протекания реакции', isCorrect: false }
+        ],
+        explanation: 'Закон Гесса гласит, что ΔH реакции зависит только от природы и состояния исходных веществ и продуктов и не зависит от пути процесса.'
+      },
+      {
+        id: 8,
+        type: 'single',
+        question: 'По уравнению CaCO<sub>3(т)</sub> → CaO<sub>(т)</sub> + CO<sub>2(г)</sub> − 178 кДж вычислите количество теплоты, поглощенное при разложении 50 г карбоната кальция (M = 100 г/моль):',
+        options: [
+          { id: 'a', text: '89 кДж', isCorrect: true },
+          { id: 'b', text: '178 кДж', isCorrect: false },
+          { id: 'c', text: '356 кДж', isCorrect: false },
+          { id: 'd', text: '44,5 кДж', isCorrect: false }
+        ],
+        explanation: 'n(CaCO<sub>3</sub>) = 50 / 100 = 0,5 моль. На 1 моль поглощается 178 кДж, значит на 0,5 моль: 178 × 0,5 = 89 кДж.'
+      },
+      {
+        id: 9,
+        type: 'single',
+        question: 'В реакции нейтрализации HNO<sub>3(aq)</sub> + KOH<sub>(aq)</sub> → KNO<sub>3(aq)</sub> + H<sub>2</sub>O<sub>(ж)</sub>, ΔH = −57,3 кДж выделилось 11,46 кДж теплоты. Вычислите массу вступившего в реакцию KOH (M = 56,1 г/моль):',
+        options: [
+          { id: 'a', text: '11,22 г', isCorrect: true },
+          { id: 'b', text: '5,61 г', isCorrect: false },
+          { id: 'c', text: '22,44 г', isCorrect: false },
+          { id: 'd', text: '1,12 г', isCorrect: false }
+        ],
+        explanation: 'n(KOH) = 11,46 / 57,3 = 0,2 моль. Масса m(KOH) = 0,2 × 56,1 = 11,22 г.'
+      },
+      {
+        id: 10,
+        type: 'single',
+        question: 'Дано термохимическое уравнение: 4P<sub>(т)</sub> + 5O<sub>2(г)</sub> → 2P<sub>2</sub>O<sub>5(т)</sub>, ΔH = −3010 кДж. Сколько теплоты выделится при сгорании 6,2 г фосфора (M(P) = 31 г/моль)?',
+        options: [
+          { id: 'a', text: '150,5 кДж', isCorrect: true },
+          { id: 'b', text: '301 кДж', isCorrect: false },
+          { id: 'c', text: '75,25 кДж', isCorrect: false },
+          { id: 'd', text: '602 кДж', isCorrect: false }
+        ],
+        explanation: 'n(P) = 6,2 / 31 = 0,2 моль. При сгорании 4 моль P выделяется 3010 кДж, тогда для 0,2 моль: Q = (0,2 × 3010) / 4 = 150,5 кДж.'
+      },
+
+      // ==================== БЛОК 2: ВЫБОР НЕСКОЛЬКИХ ОТВЕТОВ (11–15) ====================
+      {
+        id: 11,
+        type: 'multiple',
+        question: 'Выберите ВСЕ экзотермические процессы:',
+        options: [
+          { id: 'a', text: 'Горение метана (CH<sub>4</sub> + 2O<sub>2</sub>)', isCorrect: true },
+          { id: 'b', text: 'Гашение извести (CaO + H<sub>2</sub>O)', isCorrect: true },
+          { id: 'c', text: 'Медленное окисление железа в химических грелках', isCorrect: true },
+          { id: 'd', text: 'Фотосинтез глюкозы в растениях', isCorrect: false },
+          { id: 'e', text: 'Термическое разложение известняка (CaCO<sub>3</sub>)', isCorrect: false }
+        ],
+        explanation: 'Горение, гидратация CaO и окисление железа выделяют тепло. Фотосинтез и обжиг известняка требуют поглощения энергии.'
+      },
+      {
+        id: 12,
+        type: 'multiple',
+        question: 'Выберите ВСЕ верные утверждения об эндотермических реакциях:',
+        options: [
+          { id: 'a', text: 'Сопровождаются поглощением теплоты из среды', isCorrect: true },
+          { id: 'b', text: 'Изменение энтальпии положительно (ΔH &gt; 0)', isCorrect: true },
+          { id: 'c', text: 'Пример — растворение NH<sub>4</sub>NO<sub>3</sub> в охлаждающих пакетах', isCorrect: true },
+          { id: 'd', text: 'Энергия продуктов меньше энергии реагентов', isCorrect: false },
+          { id: 'e', text: 'Окружающая среда заметно нагревается (+Q)', isCorrect: false }
+        ],
+        explanation: 'В эндотермических процессах H(прод.) &gt; H(реаг.), ΔH &gt; 0, среда охлаждается (−Q).'
+      },
+      {
+        id: 13,
+        type: 'multiple',
+        question: 'Какие правила действуют для термохимических уравнений? Выберите ВСЕ верные варианты:',
+        options: [
+          { id: 'a', text: 'Обязательно указывать агрегатные состояния (г), (ж), (т)', isCorrect: true },
+          { id: 'b', text: 'Допустимы дробные коэффициенты (как доли молей)', isCorrect: true },
+          { id: 'c', text: 'Значение ΔH пропорционально стехиометрическим коэффициентам', isCorrect: true },
+          { id: 'd', text: 'Дробные коэффициенты строго запрещены', isCorrect: false },
+          { id: 'e', text: 'Умножение коэффициентов на 2 не влияет на ΔH', isCorrect: false }
+        ],
+        explanation: 'Фазовые переходы влияют на энергию, поэтому агрегатные состояния обязательны; <sup>1</sup>/<sub>2</sub>O<sub>2</sub> означает 0,5 моль молекул; ΔH масштабируется вместе с коэффициентами.'
+      },
+      {
+        id: 14,
+        type: 'multiple',
+        question: 'Для реакции H<sub>2(г)</sub> + F<sub>2(г)</sub> → 2HF<sub>(г)</sub> известны средние энергии связей: E(H–H) = 436, E(F–F) = 158, E(H–F) = 568 кДж/моль. Выберите ВСЕ верные утверждения:',
+        options: [
+          { id: 'a', text: 'На разрыв связей реагентов тратится 594 кДж', isCorrect: true },
+          { id: 'b', text: 'При образовании связей продуктов выделяется 1136 кДж', isCorrect: true },
+          { id: 'c', text: 'Изменение энтальпии ΔH = −542 кДж', isCorrect: true },
+          { id: 'd', text: 'Реакция является экзотермической', isCorrect: true },
+          { id: 'e', text: 'Изменение энтальпии ΔH = +542 кДж', isCorrect: false }
+        ],
+        explanation: 'ΣE(разр.) = 436 + 158 = 594 кДж; ΣE(обр.) = 2 × 568 = 1136 кДж. ΔH = 594 − 1136 = −542 кДж (&lt; 0, экзотермическая).'
+      },
+      {
+        id: 15,
+        type: 'multiple',
+        question: 'Даны уравнения: (1) N<sub>2(г)</sub> + O<sub>2(г)</sub> → 2NO<sub>(г)</sub>, ΔH<sub>1</sub> = +180,6 кДж; (2) 2NO<sub>2(г)</sub> → 2NO<sub>(г)</sub> + O<sub>2(г)</sub>, ΔH<sub>2</sub> = +114,2 кДж. Выберите ВСЕ верные утверждения для реакции N<sub>2(г)</sub> + 2O<sub>2(г)</sub> → 2NO<sub>2(г)</sub>:',
+        options: [
+          { id: 'a', text: 'Уравнение (2) нужно перевернуть и сложить с уравнением (1)', isCorrect: true },
+          { id: 'b', text: 'Изменение энтальпии ΔH = +66,4 кДж', isCorrect: true },
+          { id: 'c', text: 'Реакция является эндотермической', isCorrect: true },
+          { id: 'd', text: 'Изменение энтальпии ΔH = +294,8 кДж', isCorrect: false },
+          { id: 'e', text: 'Реакция является экзотермической', isCorrect: false }
+        ],
+        explanation: 'Переворачиваем (2): 2NO + O<sub>2</sub> → 2NO<sub>2</sub> (ΔH = −114,2). Складываем с (1): ΔH = 180,6 − 114,2 = +66,4 кДж (&gt; 0, эндотермическая).'
+      },
+
+      // ==================== БЛОК 3: УСТАНОВЛЕНИЕ СООТВЕТСТВИЯ (16–20) ====================
+      {
+        id: 16,
+        type: 'match',
+        question: 'Установите соответствие между процессом и его энергетической характеристикой:',
+        pairs: [
+          { id: 'p1', left: 'Разрыв химических связей в реагентах', right: 'Поглощение энергии (E > 0)' },
+          { id: 'p2', left: 'Образование новых связей в продуктах', right: 'Выделение энергии (E < 0)' },
+          { id: 'p3', left: 'Сжигание природного газа (CH<sub>4</sub>)', right: 'Экзотермическая реакция (ΔH < 0)' },
+          { id: 'p4', left: 'Обжиг известняка (CaCO<sub>3</sub>)', right: 'Эндотермическая реакция (ΔH > 0)' }
+        ],
+        explanation: 'Разрыв связей всегда требует энергии, образование — выделяет; горение — экзотермический процесс, термолиз — эндотермический.'
+      },
+      {
+        id: 17,
+        type: 'match',
+        question: 'Установите соответствие между характеристикой на энергетическом профиле / в опыте и её обозначением:',
+        pairs: [
+          { id: 'p1', left: 'Пробирка нагревается (среда получает тепло)', right: '+Q и ΔH < 0' },
+          { id: 'p2', left: 'Пробирка охлаждается (среда теряет тепло)', right: '−Q и ΔH > 0' },
+          { id: 'p3', left: 'Барьер, который нужно преодолеть для начала реакции', right: 'Энергия активации (Eₐ)' },
+          { id: 'p4', left: 'Уровень продуктов ниже уровня реагентов на графике', right: 'H(реагентов) > H(продуктов)' }
+        ],
+        explanation: 'Нагревание среды означает +Q (ΔH &lt; 0), охлаждение — −Q (ΔH &gt; 0); пик на графике соответствует энергии активации E<sub>a</sub>.'
+      },
+      {
+        id: 18,
+        type: 'match',
+        question: 'Дано: C<sub>(т)</sub> + O<sub>2(г)</sub> → CO<sub>2(г)</sub>, ΔH<sub>1</sub> = −393,5 кДж; 2C<sub>(т)</sub> + O<sub>2(г)</sub> → 2CO<sub>(г)</sub>, ΔH<sub>2</sub> = −221,0 кДж. Соотнесите уравнение со значением ΔH:',
+        pairs: [
+          { id: 'p1', left: '2CO<sub>(г)</sub> + O<sub>2(г)</sub> → 2CO<sub>2(г)</sub>', right: '−566,0 кДж' },
+          { id: 'p2', left: '2CO<sub>(г)</sub> → 2C<sub>(т)</sub> + O<sub>2(г)</sub>', right: '+221,0 кДж' },
+          { id: 'p3', left: '2C<sub>(т)</sub> + 2O<sub>2(г)</sub> → 2CO<sub>2(г)</sub>', right: '−787,0 кДж' },
+          { id: 'p4', left: 'CO<sub>2(г)</sub> → C<sub>(т)</sub> + O<sub>2(г)</sub>', right: '+393,5 кДж' }
+        ],
+        explanation: '(1) 2·(−393,5) − (−221,0) = −566,0 кДж; (2) обратное уравнение 2: +221,0 кДж; (3) удвоенное уравнение 1: −787,0 кДж; (4) обратное уравнение 1: +393,5 кДж.'
+      },
+      {
+        id: 19,
+        type: 'match',
+        question: 'Соотнесите практический процесс с его термохимическим уравнением:',
+        pairs: [
+          { id: 'p1', left: 'Химическая грелка', right: '4Fe(т) + 3O₂(г) → 2Fe₂O₃(т) + Q' },
+          { id: 'p2', left: 'Гашение извести', right: 'CaO(т) + H₂O(ж) → Ca(OH)₂(т) + 65,1 кДж' },
+          { id: 'p3', left: 'Фотосинтез', right: '6CO₂(г) + 6H₂O(ж) → C₆H₁₂O₆(т) + 6O₂(г) − 2800 кДж' },
+          { id: 'p4', left: 'Охлаждающий пакет', right: 'NH₄NO₃(т) → NH₄⁺(р-р) + NO₃⁻(р-р) − Q' }
+        ],
+        explanation: 'Грелка и гашение извести — экзотермические процессы (+Q); фотосинтез и растворение нитрата аммония — эндотермические (−Q).'
+      },
+      {
+        id: 20,
+        type: 'match',
+        question: 'Соотнесите расчётную реакцию из практикума с её итоговым изменением энтальпии (ΔH):',
+        pairs: [
+          { id: 'p1', left: 'Горение метана (по энергиям связей: C–H 413, O=O 498, C=O 799, O–H 463)', right: '−802 кДж' },
+          { id: 'p2', left: 'Синтез аммиака N<sub>2</sub> + 3H<sub>2</sub> → 2NH<sub>3</sub> (N≡N 945, H–H 436, N–H 391)', right: '−93 кДж' },
+          { id: 'p3', left: 'Гидрирование этена C<sub>2</sub>H<sub>4</sub> + H<sub>2</sub> → C<sub>2</sub>H<sub>6</sub> (по ΔH сгорания)', right: '−136,8 кДж' },
+          { id: 'p4', left: 'Образование метанола C + 2H<sub>2</sub> + 0,5O<sub>2</sub> → CH<sub>3</sub>OH (по закону Гесса)', right: '−238,7 кДж' }
+        ],
+        explanation: 'Метан: 2648 − 3450 = −802 кДж; Аммиак: 2253 − 2346 = −93 кДж; Этен: −1411,0 − 285,8 + 1560,0 = −136,8 кДж; Метанол: −393,5 − 571,6 + 726,4 = −238,7 кДж.'
+      }
+    ];
+
+    const STORAGE_KEY = 'thermochem_quiz_v2';
+
+    // Состояние приложения
+    let state = null;
+
+    // Ссылки на элементы DOM
+    const el = {
+      scoreDisplay: document.getElementById('scoreDisplay'),
+      progressSection: document.getElementById('progressSection'),
+      progressText: document.getElementById('progressText'),
+      progressPercent: document.getElementById('progressPercent'),
+      progressBar: document.getElementById('progressBar'),
+      mobileProgressText: document.getElementById('mobileProgressText'),
+      mobileProgressBarWrap: document.getElementById('mobileProgressBarWrap'),
+      mobileProgressBar: document.getElementById('mobileProgressBar'),
+      quizScreen: document.getElementById('quizScreen'),
+      resultScreen: document.getElementById('resultScreen'),
+      questionTypeBadge: document.getElementById('questionTypeBadge'),
+      questionHint: document.getElementById('questionHint'),
+      questionText: document.getElementById('questionText'),
+      optionsContainer: document.getElementById('optionsContainer'),
+      validationMsg: document.getElementById('validationMsg'),
+      validationText: document.getElementById('validationText'),
+      feedbackBox: document.getElementById('feedbackBox'),
+      feedbackIcon: document.getElementById('feedbackIcon'),
+      feedbackTitle: document.getElementById('feedbackTitle'),
+      feedbackPoints: document.getElementById('feedbackPoints'),
+      feedbackExplanation: document.getElementById('feedbackExplanation'),
+      checkBtn: document.getElementById('checkBtn'),
+      nextBtn: document.getElementById('nextBtn'),
+      nextBtnText: document.getElementById('nextBtnText'),
+      finalScore: document.getElementById('finalScore'),
+      finalPercent: document.getElementById('finalPercent'),
+      finalLevel: document.getElementById('finalLevel'),
+      resultBadge: document.getElementById('resultBadge'),
+      resultSummaryText: document.getElementById('resultSummaryText'),
+      reviewList: document.getElementById('reviewList'),
+      restartBtn: document.getElementById('restartBtn'),
+      headerResetBtn: document.getElementById('headerResetBtn'),
+      resetModal: document.getElementById('resetModal'),
+      cancelResetBtn: document.getElementById('cancelResetBtn'),
+      confirmResetBtn: document.getElementById('confirmResetBtn')
+    };
+
+    /**
+     * Перемешивание массива (алгоритм Фишера — Йетса).
+     */
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    /**
+     * Экранирование текста для безопасной вставки в <option> и HTML-атрибуты.
+     */
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    /**
+     * Форматирование дробных баллов (например, 0.25 -> "0,25", 1.0 -> "1").
+     */
+    function formatPoints(num) {
+      const rounded = Math.round(num * 100) / 100;
+      return String(rounded).replace('.', ',');
+    }
+
+    /**
+     * Создание нового состояния с перемешанными вариантами.
+     * Для заданий на соответствие каждой правой части назначается стабильный строковый ключ opt_0, opt_1, ...
+     */
+    function createFreshState() {
+      const preparedQuestions = QUESTIONS_BANK.map((q) => {
+        if (q.type === 'single' || q.type === 'multiple') {
+          return {
+            id: q.id,
+            optionOrder: shuffleArray(q.options.map((o) => o.id))
+          };
+        } else {
+          const rightOptions = q.pairs.map((p, idx) => ({
+            value: `opt_${idx}`,
+            text: p.right
+          }));
+          return {
+            id: q.id,
+            rightOptions: shuffleArray(rightOptions)
+          };
+        }
+      });
+
+      return {
+        currentIndex: 0,
+        finished: false,
+        preparedQuestions,
+        results: {}
+      };
+    }
+
+    /**
+     * Загрузка состояния из sessionStorage.
+     */
+    function loadState() {
+      try {
+        const raw = sessionStorage.getItem(STORAGE_KEY);
+        if (!raw) return createFreshState();
+        const parsed = JSON.parse(raw);
+        if (
+          parsed &&
+          typeof parsed.currentIndex === 'number' &&
+          Array.isArray(parsed.preparedQuestions) &&
+          parsed.preparedQuestions.length === QUESTIONS_BANK.length
+        ) {
+          return parsed;
+        }
+      } catch (e) {
+        console.warn('Не удалось прочитать sessionStorage:', e);
+      }
+      return createFreshState();
+    }
+
+    /**
+     * Сохранение состояния в sessionStorage.
+     */
+    function saveState() {
+      try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.warn('Не удалось сохранить в sessionStorage:', e);
+      }
+    }
+
+    /**
+     * Подсчет суммарных баллов.
+     */
+    function getTotalScore() {
+      const sum = Object.values(state.results).reduce((acc, r) => acc + (r.checked ? r.points : 0), 0);
+      return Math.round(sum * 100) / 100;
+    }
+
+    /**
+     * Обновление шапки (баллы, прогресс-бар).
+     */
+    function updateHeader() {
+      el.scoreDisplay.textContent = formatPoints(getTotalScore());
+      if (state.finished) {
+        el.progressSection.classList.add('md:hidden');
+        el.progressSection.classList.remove('md:flex');
+        el.mobileProgressText.classList.add('hidden');
+        el.mobileProgressBarWrap.classList.add('hidden');
+      } else {
+        el.progressSection.classList.remove('md:hidden');
+        el.progressSection.classList.add('md:flex');
+        el.mobileProgressText.classList.remove('hidden');
+        el.mobileProgressBarWrap.classList.remove('hidden');
+
+        const currentNum = state.currentIndex + 1;
+        const total = QUESTIONS_BANK.length;
+        const pct = Math.round((currentNum / total) * 100);
+
+        el.progressText.textContent = `Вопрос ${currentNum} из ${total}`;
+        el.progressPercent.textContent = `${pct}%`;
+        el.progressBar.style.width = `${pct}%`;
+        el.mobileProgressText.textContent = `${currentNum}/${total}`;
+        el.mobileProgressBar.style.width = `${pct}%`;
+      }
+    }
+
+    /**
+     * Отрисовка текущего вопроса.
+     */
+    function renderCurrentQuestion() {
+      el.quizScreen.classList.remove('hidden');
+      el.resultScreen.classList.add('hidden');
+      el.validationMsg.classList.add('hidden');
+
+      const q = QUESTIONS_BANK[state.currentIndex];
+      const prep = state.preparedQuestions[state.currentIndex];
+      const saved = state.results[q.id] || { answer: null, checked: false, status: null, points: 0 };
+
+      // Бейдж типа и подсказка
+      if (q.type === 'single') {
+        el.questionTypeBadge.textContent = 'Один ответ';
+        el.questionTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-blue-100 text-blue-800';
+        el.questionHint.textContent = 'Выберите один верный вариант';
+      } else if (q.type === 'multiple') {
+        el.questionTypeBadge.textContent = 'Несколько ответов';
+        el.questionTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-amber-100 text-amber-800';
+        el.questionHint.textContent = 'Отметьте все верные варианты';
+      } else {
+        el.questionTypeBadge.textContent = 'Соответствие';
+        el.questionTypeBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-emerald-100 text-emerald-800';
+        el.questionHint.textContent = 'Подберите пару для каждого пункта';
+      }
+
+      // Текст вопроса
+      el.questionText.innerHTML = `<span class="text-[#2563eb] mr-1.5">${q.id}.</span>${q.question}`;
+
+      // Очистка и отрисовка вариантов
+      el.optionsContainer.innerHTML = '';
+
+      if (q.type === 'single') {
+        el.optionsContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-3';
+        renderSingleOptions(q, prep, saved);
+      } else if (q.type === 'multiple') {
+        el.optionsContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-3';
+        renderMultipleOptions(q, prep, saved);
+      } else {
+        el.optionsContainer.className = 'flex flex-col gap-2.5';
+        renderMatchOptions(q, prep, saved);
+      }
+
+      // Состояние кнопок и обратной связи
+      if (saved.checked) {
+        el.checkBtn.classList.add('hidden');
+        el.nextBtn.classList.remove('hidden');
+        el.nextBtnText.textContent = state.currentIndex === QUESTIONS_BANK.length - 1
+          ? 'Показать результаты'
+          : 'Следующий вопрос';
+        renderFeedback(saved, q.explanation);
+      } else {
+        el.checkBtn.classList.remove('hidden');
+        el.nextBtn.classList.add('hidden');
+        el.feedbackBox.classList.add('hidden');
+      }
+
+      updateHeader();
+    }
+
+    /**
+     * Отрисовка вопросов с выбором одного ответа (2 колонки на десктопе).
+     */
+    function renderSingleOptions(q, prep, saved) {
+      const selectedId = saved.answer;
+
+      prep.optionOrder.forEach((optId) => {
+        const opt = q.options.find((o) => o.id === optId);
+        const isSelected = selectedId === opt.id;
+
+        let cardClass = 'border-slate-200 bg-white hover:border-[#2563eb] hover:bg-blue-50/40 cursor-pointer';
+        let indicatorClass = 'border-slate-300 bg-white';
+        let badgeHtml = '';
+
+        if (saved.checked) {
+          cardClass = 'cursor-default ';
+          if (opt.isCorrect) {
+            cardClass += 'border-[#16a34a] bg-green-50 ring-1 ring-[#16a34a]';
+            indicatorClass = 'border-[#16a34a] bg-[#16a34a]';
+            badgeHtml = '<span class="ml-auto text-xs font-bold text-[#16a34a] bg-green-100 px-2 py-0.5 rounded-md shrink-0">Верно</span>';
+          } else if (isSelected && !opt.isCorrect) {
+            cardClass += 'border-[#dc2626] bg-red-50 ring-1 ring-[#dc2626]';
+            indicatorClass = 'border-[#dc2626] bg-[#dc2626]';
+            badgeHtml = '<span class="ml-auto text-xs font-bold text-[#dc2626] bg-red-100 px-2 py-0.5 rounded-md shrink-0">Ошибка</span>';
+          } else {
+            cardClass += 'border-slate-200 bg-slate-50/70 opacity-65';
+          }
+        } else if (isSelected) {
+          cardClass = 'border-[#2563eb] bg-blue-50/70 ring-1 ring-[#2563eb] cursor-pointer';
+          indicatorClass = 'border-[#2563eb] bg-[#2563eb]';
+        }
+
+        const label = document.createElement('label');
+        label.className = `flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all select-none ${cardClass}`;
+        label.innerHTML = `
+          <input type="radio" name="q_${q.id}" value="${opt.id}" class="sr-only" ${isSelected ? 'checked' : ''} ${saved.checked ? 'disabled' : ''}>
+          <span class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${indicatorClass}">
+            ${(isSelected || (saved.checked && opt.isCorrect)) ? '<span class="w-2 h-2 rounded-full bg-white"></span>' : ''}
+          </span>
+          <span class="text-[15px] sm:text-base font-medium text-[#0f172a] leading-snug">${opt.text}</span>
+          ${badgeHtml}
+        `;
+
+        if (!saved.checked) {
+          label.addEventListener('click', () => {
+            state.results[q.id] = { answer: opt.id, checked: false, status: null, points: 0 };
+            saveState();
+            el.validationMsg.classList.add('hidden');
+            renderCurrentQuestion();
+          });
+        }
+
+        el.optionsContainer.appendChild(label);
+      });
+    }
+
+    /**
+     * Отрисовка вопросов с множественным выбором (2 колонки на десктопе).
+     */
+    function renderMultipleOptions(q, prep, saved) {
+      const selectedIds = Array.isArray(saved.answer) ? saved.answer : [];
+
+      prep.optionOrder.forEach((optId) => {
+        const opt = q.options.find((o) => o.id === optId);
+        const isSelected = selectedIds.includes(opt.id);
+
+        let cardClass = 'border-slate-200 bg-white hover:border-[#2563eb] hover:bg-blue-50/40 cursor-pointer';
+        let boxClass = 'border-slate-300 bg-white text-transparent';
+        let badgeHtml = '';
+
+        if (saved.checked) {
+          cardClass = 'cursor-default ';
+          if (opt.isCorrect && isSelected) {
+            cardClass += 'border-[#16a34a] bg-green-50 ring-1 ring-[#16a34a]';
+            boxClass = 'border-[#16a34a] bg-[#16a34a] text-white';
+            badgeHtml = '<span class="ml-auto text-xs font-bold text-[#16a34a] bg-green-100 px-2 py-0.5 rounded-md shrink-0">Верно</span>';
+          } else if (opt.isCorrect && !isSelected) {
+            cardClass += 'border-amber-500 border-dashed bg-amber-50';
+            boxClass = 'border-amber-500 bg-white text-amber-600';
+            badgeHtml = '<span class="ml-auto text-xs font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md shrink-0">Пропущено</span>';
+          } else if (!opt.isCorrect && isSelected) {
+            cardClass += 'border-[#dc2626] bg-red-50 ring-1 ring-[#dc2626]';
+            boxClass = 'border-[#dc2626] bg-[#dc2626] text-white';
+            badgeHtml = '<span class="ml-auto text-xs font-bold text-[#dc2626] bg-red-100 px-2 py-0.5 rounded-md shrink-0">Лишнее</span>';
+          } else {
+            cardClass += 'border-slate-200 bg-slate-50/70 opacity-65';
+          }
+        } else if (isSelected) {
+          cardClass = 'border-[#2563eb] bg-blue-50/70 ring-1 ring-[#2563eb] cursor-pointer';
+          boxClass = 'border-[#2563eb] bg-[#2563eb] text-white';
+        }
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.disabled = saved.checked;
+        btn.className = `w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all select-none ${cardClass}`;
+        btn.innerHTML = `
+          <span class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${boxClass}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+          </span>
+          <span class="text-[15px] sm:text-base font-medium text-[#0f172a] leading-snug">${opt.text}</span>
+          ${badgeHtml}
+        `;
+
+        if (!saved.checked) {
+          btn.addEventListener('click', () => {
+            const currentAns = Array.isArray(state.results[q.id]?.answer) ? state.results[q.id].answer : [];
+            const nextSelected = currentAns.includes(opt.id)
+              ? currentAns.filter((id) => id !== opt.id)
+              : [...currentAns, opt.id];
+            state.results[q.id] = { answer: nextSelected, checked: false, status: null, points: 0 };
+            saveState();
+            el.validationMsg.classList.add('hidden');
+            renderCurrentQuestion();
+          });
+        }
+
+        el.optionsContainer.appendChild(btn);
+      });
+    }
+
+    /**
+     * Считывает актуальные значения всех <select> на экране для текущего задания на соответствие.
+     */
+    function readMatchValuesFromDOM() {
+      const map = {};
+      const selects = el.optionsContainer.querySelectorAll('select[data-pair-id]');
+      selects.forEach((sel) => {
+        const pairId = sel.getAttribute('data-pair-id');
+        map[pairId] = sel.value;
+      });
+      return map;
+    }
+
+    /**
+     * Отрисовка задания на соответствие (широкая двухколоночная строка: 1fr 1.15fr).
+     */
+    function renderMatchOptions(q, prep, saved) {
+      const savedMap = (saved.answer && typeof saved.answer === 'object' && !Array.isArray(saved.answer))
+        ? saved.answer
+        : {};
+
+      q.pairs.forEach((pair, idx) => {
+        const expectedVal = `opt_${idx}`;
+        const chosenVal = savedMap[pair.id] !== undefined && savedMap[pair.id] !== null ? savedMap[pair.id] : '';
+        const isPairCorrect = saved.checked && chosenVal === expectedVal;
+        const isPairWrong = saved.checked && chosenVal !== expectedVal;
+
+        let rowClass = 'border-slate-200 bg-slate-50/70';
+        let selectClass = 'border-slate-300 bg-white text-[#0f172a] focus:border-[#2563eb] focus:ring-[#2563eb]';
+
+        if (isPairCorrect) {
+          rowClass = 'border-[#16a34a] bg-green-50/80';
+          selectClass = 'border-[#16a34a] bg-white text-green-900 font-semibold';
+        } else if (isPairWrong) {
+          rowClass = 'border-[#dc2626] bg-red-50/80';
+          selectClass = 'border-[#dc2626] bg-white text-red-900 font-semibold';
+        }
+
+        const row = document.createElement('div');
+        row.className = `px-3.5 py-2.5 rounded-xl border-2 transition-colors ${rowClass}`;
+
+        const optionsHtml = prep.rightOptions.map((ro) => {
+          const selectedAttr = chosenVal === ro.value ? 'selected' : '';
+          return `<option value="${ro.value}" ${selectedAttr}>${escapeHtml(ro.text)}</option>`;
+        }).join('');
+
+        row.innerHTML = `
+          <div class="grid grid-cols-1 md:grid-cols-[1fr_1.15fr] items-center gap-2.5 md:gap-4">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="w-6 h-6 rounded-md bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">${idx + 1}</span>
+              <span class="text-[15px] font-semibold text-[#0f172a] leading-snug">${pair.left}</span>
+            </div>
+            <div class="w-full">
+              <select
+                data-pair-id="${pair.id}"
+                ${saved.checked ? 'disabled' : ''}
+                class="w-full px-3 py-2 rounded-lg border text-[15px] shadow-2xs transition-colors focus:outline-none focus:ring-2 ${selectClass}"
+              >
+                <option value="">— Выберите соответствие —</option>
+                ${optionsHtml}
+              </select>
+            </div>
+          </div>
+          ${isPairWrong ? `
+            <div class="mt-2 pt-1.5 border-t border-red-200 text-xs sm:text-sm text-green-800 font-medium flex flex-wrap items-center gap-1.5">
+              <span class="font-bold text-[#16a34a]">Верная пара:</span>
+              <span>${escapeHtml(pair.right)}</span>
+            </div>
+          ` : ''}
+        `;
+
+        const selectEl = row.querySelector('select');
+        if (!saved.checked) {
+          selectEl.addEventListener('change', () => {
+            // Скрываем предупреждение сразу при любом изменении
+            el.validationMsg.classList.add('hidden');
+            // Читаем ВСЕ актуальные <select> из DOM, исключая потерю предыдущих выборов
+            const fullMap = readMatchValuesFromDOM();
+            state.results[q.id] = { answer: fullMap, checked: false, status: null, points: 0 };
+            saveState();
+          });
+        }
+
+        el.optionsContainer.appendChild(row);
+      });
+    }
+
+    /**
+     * Отображение компактного блока обратной связи после проверки.
+     */
+    function renderFeedback(saved, explanation) {
+      el.feedbackBox.classList.remove('hidden');
+
+      if (saved.status === 'correct') {
+        el.feedbackBox.className = 'mt-3.5 rounded-xl border-2 border-[#16a34a] bg-green-50/90 px-4 py-3';
+        el.feedbackIcon.className = 'w-5 h-5 rounded-full bg-[#16a34a] flex items-center justify-center text-white text-xs font-bold shrink-0';
+        el.feedbackIcon.textContent = '✓';
+        el.feedbackTitle.className = 'font-bold text-sm sm:text-base text-green-900';
+        el.feedbackTitle.textContent = 'Верно!';
+        el.feedbackPoints.className = 'ml-auto text-xs font-bold px-2 py-0.5 rounded-md bg-green-200/80 text-green-900';
+        el.feedbackPoints.textContent = `+${formatPoints(saved.points)} балл`;
+      } else if (saved.status === 'partial') {
+        el.feedbackBox.className = 'mt-3.5 rounded-xl border-2 border-amber-400 bg-amber-50/90 px-4 py-3';
+        el.feedbackIcon.className = 'w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center text-white text-xs font-bold shrink-0';
+        el.feedbackIcon.textContent = '!';
+        el.feedbackTitle.className = 'font-bold text-sm sm:text-base text-amber-900';
+        el.feedbackTitle.textContent = 'Частично верно';
+        el.feedbackPoints.className = 'ml-auto text-xs font-bold px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-900';
+        el.feedbackPoints.textContent = `+${formatPoints(saved.points)} б.`;
+      } else {
+        el.feedbackBox.className = 'mt-3.5 rounded-xl border-2 border-[#dc2626] bg-red-50/90 px-4 py-3';
+        el.feedbackIcon.className = 'w-5 h-5 rounded-full bg-[#dc2626] flex items-center justify-center text-white text-xs font-bold shrink-0';
+        el.feedbackIcon.textContent = '✕';
+        el.feedbackTitle.className = 'font-bold text-sm sm:text-base text-red-900';
+        el.feedbackTitle.textContent = 'Неверно';
+        el.feedbackPoints.className = 'ml-auto text-xs font-bold px-2 py-0.5 rounded-md bg-red-200/80 text-red-900';
+        el.feedbackPoints.textContent = '0 баллов';
+      }
+
+      el.feedbackExplanation.innerHTML = `<strong class="text-[#0f172a]">Пояснение:</strong> ${explanation}`;
+    }
+
+    /**
+     * Проверка ответа на текущий вопрос.
+     */
+    function handleCheckAnswer() {
+      const q = QUESTIONS_BANK[state.currentIndex];
+      const saved = state.results[q.id] || { answer: null, checked: false, status: null, points: 0 };
+
+      if (q.type === 'single') {
+        const val = saved.answer;
+        if (val === '' || val === null || val === undefined) {
+          showValidation('Выберите один из предложенных вариантов ответа.');
+          return;
+        }
+        const chosenOpt = q.options.find((o) => o.id === val);
+        const isCorrect = Boolean(chosenOpt && chosenOpt.isCorrect);
+        state.results[q.id] = {
+          answer: val,
+          checked: true,
+          status: isCorrect ? 'correct' : 'wrong',
+          points: isCorrect ? 1 : 0
+        };
+      } else if (q.type === 'multiple') {
+        const selected = Array.isArray(saved.answer) ? saved.answer : [];
+        if (selected.length === 0) {
+          showValidation('Отметьте хотя бы один вариант ответа.');
+          return;
+        }
+        const correctIds = q.options.filter((o) => o.isCorrect).map((o) => o.id);
+        const correctPicked = selected.filter((id) => correctIds.includes(id)).length;
+        const wrongPicked = selected.filter((id) => !correctIds.includes(id)).length;
+
+        let status = 'wrong';
+        let points = 0;
+
+        if (correctPicked === correctIds.length && wrongPicked === 0) {
+          status = 'correct';
+          points = 1;
+        } else if (correctPicked > wrongPicked) {
+          status = 'partial';
+          points = Math.round(((correctPicked - wrongPicked) / correctIds.length) * 100) / 100;
+        }
+
+        state.results[q.id] = {
+          answer: selected,
+          checked: true,
+          status,
+          points
+        };
+      } else if (q.type === 'match') {
+        // Всегда считываем актуальные значения напрямую из <select> и синхронизируем со стейтом
+        const liveMap = readMatchValuesFromDOM();
+        state.results[q.id] = { answer: liveMap, checked: false, status: null, points: 0 };
+
+        // Строгая проверка на пустое значение (никогда не используем !val)
+        const allSelected = q.pairs.every((p) => {
+          const val = liveMap[p.id];
+          return !(val === '' || val === null || val === undefined);
+        });
+
+        if (!allSelected) {
+          saveState();
+          showValidation('Подберите соответствие для каждого пункта из списка.');
+          return;
+        }
+
+        let matchedCount = 0;
+        q.pairs.forEach((p, idx) => {
+          if (liveMap[p.id] === `opt_${idx}`) {
+            matchedCount++;
+          }
+        });
+
+        let status = 'wrong';
+        let points = 0;
+        if (matchedCount === q.pairs.length) {
+          status = 'correct';
+          points = 1;
+        } else if (matchedCount > 0) {
+          status = 'partial';
+          points = Math.round((matchedCount / q.pairs.length) * 100) / 100;
+        }
+
+        state.results[q.id] = {
+          answer: liveMap,
+          checked: true,
+          status,
+          points
+        };
+      }
+
+      saveState();
+      renderCurrentQuestion();
+    }
+
+    /**
+     * Отображение сообщения валидации (вместо alert).
+     */
+    function showValidation(msg) {
+      el.validationText.textContent = msg;
+      el.validationMsg.classList.remove('hidden');
+    }
+
+    /**
+     * Переход к следующему вопросу или итоговому экрану.
+     */
+    function handleNext() {
+      if (state.currentIndex < QUESTIONS_BANK.length - 1) {
+        state.currentIndex++;
+        saveState();
+        renderCurrentQuestion();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        state.finished = true;
+        saveState();
+        renderResultsScreen();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    /**
+     * Отрисовка итогового экрана со статистикой и разбором всех 20 вопросов.
+     */
+    function renderResultsScreen() {
+      el.quizScreen.classList.add('hidden');
+      el.resultScreen.classList.remove('hidden');
+      updateHeader();
+
+      const totalScore = getTotalScore();
+      const maxScore = QUESTIONS_BANK.length;
+      const percent = Math.round((totalScore / maxScore) * 100);
+
+      el.finalScore.textContent = formatPoints(totalScore);
+      el.finalPercent.textContent = `${percent}%`;
+
+      let level = '';
+      let badgeText = '';
+      let badgeClass = '';
+      let summary = '';
+
+      if (percent >= 90) {
+        level = 'Отличный';
+        badgeText = 'Высокий уровень готовности к экзамену';
+        badgeClass = 'bg-green-100 text-green-800';
+        summary = 'Превосходный результат! Вы уверенно применяете формулы расчета ΔH по энергиям связей, термохимическим пропорциям и закону Гесса.';
+      } else if (percent >= 75) {
+        level = 'Хороший';
+        badgeText = 'Уверенное владение темой';
+        badgeClass = 'bg-blue-100 text-blue-800';
+        summary = 'Хорошая подготовка! Просмотрите ниже задания с частичным баллом или ошибками, чтобы закрепить материал.';
+      } else if (percent >= 55) {
+        level = 'Базовый';
+        badgeText = 'Базовый уровень освоения';
+        badgeClass = 'bg-amber-100 text-amber-800';
+        summary = 'Основные понятия усвоены, но в расчетах и установлении соответствий есть пробелы. Изучите пояснения и пройдите тест еще раз.';
+      } else {
+        level = 'Начальный';
+        badgeText = 'Требуется повторение материала';
+        badgeClass = 'bg-red-100 text-red-800';
+        summary = 'Рекомендуется повторить конспект занятия: знаки ΔH и Q, правила термохимических уравнений и алгоритм закона Гесса.';
+      }
+
+      el.finalLevel.textContent = level;
+      el.resultBadge.textContent = badgeText;
+      el.resultBadge.className = `inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold mb-3 ${badgeClass}`;
+      el.resultSummaryText.textContent = summary;
+
+      // Сводка по всем 20 вопросам
+      el.reviewList.innerHTML = '';
+      QUESTIONS_BANK.forEach((q) => {
+        const res = state.results[q.id] || { status: 'wrong', points: 0 };
+        const typeLabel = q.type === 'single'
+          ? 'Один ответ'
+          : q.type === 'multiple'
+            ? 'Несколько ответов'
+            : 'Соответствие';
+
+        let statusBadge = '';
+        if (res.status === 'correct') {
+          statusBadge = `<span class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-green-100 text-green-800 shrink-0">Верно (1)</span>`;
+        } else if (res.status === 'partial') {
+          statusBadge = `<span class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800 shrink-0">Частично (${formatPoints(res.points)})</span>`;
+        } else {
+          statusBadge = `<span class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-red-100 text-red-800 shrink-0">Неверно (0)</span>`;
+        }
+
+        let correctAnswerHtml = '';
+        if (q.type === 'single') {
+          const rightOpt = q.options.find((o) => o.isCorrect);
+          correctAnswerHtml = `<div class="mt-2 text-xs sm:text-sm text-green-800"><strong class="text-green-900">Правильный ответ:</strong> ${rightOpt.text}</div>`;
+        } else if (q.type === 'multiple') {
+          const rightOpts = q.options.filter((o) => o.isCorrect).map((o) => `<li>${o.text}</li>`).join('');
+          correctAnswerHtml = `<div class="mt-2 text-xs sm:text-sm text-green-800"><strong class="text-green-900">Правильные ответы:</strong><ul class="list-disc pl-5 mt-1 space-y-0.5">${rightOpts}</ul></div>`;
+        } else {
+          const pairsHtml = q.pairs.map((p) => `<li>${p.left} → <strong>${escapeHtml(p.right)}</strong></li>`).join('');
+          correctAnswerHtml = `<div class="mt-2 text-xs sm:text-sm text-green-800"><strong class="text-green-900">Верные соответствия:</strong><ul class="list-disc pl-5 mt-1 space-y-0.5">${pairsHtml}</ul></div>`;
+        }
+
+        const details = document.createElement('details');
+        details.className = 'group';
+        details.innerHTML = `
+          <summary class="list-none cursor-pointer px-4 sm:px-5 py-3 hover:bg-slate-50 transition-colors flex items-start sm:items-center justify-between gap-3">
+            <div class="flex items-start gap-2.5 min-w-0">
+              <span class="w-6 h-6 rounded-md bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                ${q.id}
+              </span>
+              <div class="min-w-0">
+                <div class="text-sm font-semibold text-[#0f172a] leading-snug line-clamp-2">${q.question}</div>
+                <div class="text-xs text-slate-500 mt-0.5">${typeLabel}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              ${statusBadge}
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+          <div class="px-4 sm:px-5 pb-3.5 pt-1 bg-slate-50/80 border-t border-slate-100">
+            ${correctAnswerHtml}
+            <div class="mt-2 text-xs sm:text-sm text-slate-700 leading-relaxed">
+              <strong class="text-[#0f172a]">Пояснение:</strong> ${q.explanation}
+            </div>
+          </div>
+        `;
+
+        el.reviewList.appendChild(details);
+      });
+    }
+
+    /**
+     * Полный перезапуск теста.
+     */
+    function restartQuiz() {
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } catch (e) {
+        console.warn('Не удалось очистить sessionStorage:', e);
+      }
+      state = createFreshState();
+      saveState();
+      el.resetModal.classList.add('hidden');
+      renderCurrentQuestion();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Обработчики кнопок
+    el.checkBtn.addEventListener('click', handleCheckAnswer);
+    el.nextBtn.addEventListener('click', handleNext);
+    el.restartBtn.addEventListener('click', restartQuiz);
+
+    el.headerResetBtn.addEventListener('click', () => {
+      el.resetModal.classList.remove('hidden');
+    });
+    el.cancelResetBtn.addEventListener('click', () => {
+      el.resetModal.classList.add('hidden');
+    });
+    el.confirmResetBtn.addEventListener('click', restartQuiz);
+    el.resetModal.addEventListener('click', (e) => {
+      if (e.target === el.resetModal) {
+        el.resetModal.classList.add('hidden');
+      }
+    });
+
+    // Старт приложения
+    (function init() {
+      state = loadState();
+      saveState();
+      if (state.finished) {
+        renderResultsScreen();
+      } else {
+        renderCurrentQuestion();
+      }
+    })();
+  </script>
+</body>
+</html>
